@@ -253,11 +253,22 @@ export interface AuditLogItem {
   timestamp: string;
 }
 
+export interface TinyFishSearchResult {
+  position?: number;
+  title: string;
+  url: string;
+  snippet?: string;
+  site_name?: string;
+  date?: string;
+}
+
 export interface AIMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   codeSnippet?: string;
-  mode?: 'Learn' | 'Hint' | 'Debug';
+  mode?: 'Learn' | 'TinyFish' | 'Hint' | 'Debug';
+  searchResults?: TinyFishSearchResult[];
   createdAt: string;
 }
+

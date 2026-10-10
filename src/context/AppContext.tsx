@@ -14,8 +14,10 @@ import {
   RewardRule,
   AuditLogItem,
   AIMessage,
+  TinyFishSearchResult,
   QuickActionItem,
 } from '../types';
+import { searchTinyFish, formatTinyFishResults } from '../services/tinyfish';
 import {
   initialUser,
   adminUser,
@@ -106,8 +108,8 @@ interface AppContextType {
   
   // AI Mentor
   aiMessages: AIMessage[];
-  aiMentorMode: 'Learn' | 'Hint' | 'Debug';
-  setAiMentorMode: (mode: 'Learn' | 'Hint' | 'Debug') => void;
+  aiMentorMode: 'Learn' | 'TinyFish' | 'Hint' | 'Debug';
+  setAiMentorMode: (mode: 'Learn' | 'TinyFish' | 'Hint' | 'Debug') => void;
   isAiMentorOpen: boolean;
   setIsAiMentorOpen: (open: boolean) => void;
   selectedQuestionContext: CodingQuestion | null;
@@ -239,7 +241,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // AI Mentor State
-  const [aiMentorMode, setAiMentorMode] = useState<'Learn' | 'Hint' | 'Debug'>('Learn');
+  const [aiMentorMode, setAiMentorMode] = useState<'Learn' | 'TinyFish' | 'Hint' | 'Debug'>('Learn');
   const [isAiMentorOpen, setIsAiMentorOpen] = useState<boolean>(false);
   const [selectedQuestionContext, setSelectedQuestionContext] = useState<CodingQuestion | null>(null);
   const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
@@ -248,7 +250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: 'ai_welcome',
       role: 'assistant',
       mode: 'Learn',
-      content: "Hello! I am your PeerCraft AI Mentor. Whether you want to understand an algorithm from first principles, receive step-by-step hints without spoiling the solution, or debug your edge cases, I'm here to help. Select a mode above to get started!",
+      content: "Hello! I am your PeerCraft AI Mentor. Whether you want to explore concepts, search live web documentation via TinyFish, receive hints without spoilers, or debug edge cases, I'm here to help. Select a mode above to get started!",
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -915,7 +917,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // AI Mentor messaging with mode-specific reasoning
-  const sendAiMessage = (messageText: string) => {
+  const sendAiMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
 
     const userMsg: AIMessage = {
@@ -928,12 +930,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAiMessages((prev) => [...prev, userMsg]);
     setIsAiThinking(true);
 
-    // Realistic intelligent assistant response generation
+    const currentMode = aiMentorMode;
+    const qContext = selectedQuestionContext ? `regarding "${selectedQuestionContext.title}"` : '';
+
+    if (currentMode === 'TinyFish') {
+      try {
+        const queryWithContext = selectedQuestionContext
+          ? `${selectedQuestionContext.title} ${messageText}`
+          : messageText;
+
+        const data = await searchTinyFish(queryWithContext, 'Coding guidance, algorithms and technical documentation');
+        const replyContent = formatTinyFishResults(messageText, data, selectedQuestionContext?.title);
+
+        const assistantMsg: AIMessage = {
+          id: `ai_resp_${Date.now()}`,
+          role: 'assistant',
+          mode: 'TinyFish',
+          content: replyContent,
+          searchResults: data.results,
+          createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+
+        setAiMessages((prev) => [...prev, assistantMsg]);
+      } catch (err: any) {
+        console.error('TinyFish Search API Error:', err);
+        const fallbackMsg: AIMessage = {
+          id: `ai_resp_${Date.now()}`,
+          role: 'assistant',
+          mode: 'TinyFish',
+          content: `### 🐟 TinyFish Web Search\n\nUnable to fetch live web results (${err.message || 'Network error'}).\n\n**Quick fallback tips for "${messageText}":**\n1. Ensure your query contains specific algorithmic or library keywords.\n2. You can switch to **Learn** or **Hint** mode for instant on-device mentor guidance.`,
+          createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setAiMessages((prev) => [...prev, fallbackMsg]);
+      } finally {
+        setIsAiThinking(false);
+      }
+      return;
+    }
+
+    // Realistic intelligent assistant response generation for Learn, Hint, Debug
     setTimeout(() => {
       let replyContent = '';
-      const qContext = selectedQuestionContext ? `regarding "${selectedQuestionContext.title}"` : '';
 
-      if (aiMentorMode === 'Learn') {
+      if (currentMode === 'Learn') {
         replyContent = `### Concept Breakdown ${qContext}\n\n` +
           `Let's analyze the underlying pattern:\n\n` +
           `1. **Problem Core:** This problem evaluates your understanding of algorithmic trade-offs (space vs. time complexity).\n` +
@@ -943,7 +982,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           `   - **Step 2:** Iterate while maintaining invariant conditions.\n` +
           `   - **Step 3:** Evaluate candidate solutions on-the-fly.\n\n` +
           `*Question for you:* Have you considered what happens if the input has duplicate values or negative numbers?`;
-      } else if (aiMentorMode === 'Hint') {
+      } else if (currentMode === 'Hint') {
         replyContent = `### Progressive Hint ${qContext}\n\n` +
           `💡 **Hint 1 of 3:**\n` +
           `Notice how sorting the input array or utilizing a hash map transforms lookups from linear time to constant time $O(1)$.\n\n` +
@@ -962,7 +1001,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const assistantMsg: AIMessage = {
         id: `ai_resp_${Date.now()}`,
         role: 'assistant',
-        mode: aiMentorMode,
+        mode: currentMode,
         content: replyContent,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -978,7 +1017,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: `ai_${Date.now()}`,
         role: 'assistant',
         mode: aiMentorMode,
-        content: `Conversation refreshed. I'm ready to assist you in ${aiMentorMode} mode. Ask any question or paste a code snippet!`,
+        content: `Conversation refreshed. I'm ready to assist you in ${aiMentorMode} mode. Ask any question, search live documentation via TinyFish, or paste a code snippet!`,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
