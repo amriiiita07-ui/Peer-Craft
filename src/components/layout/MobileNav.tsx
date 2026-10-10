@@ -14,12 +14,12 @@ interface MobileNavProps {
 
 export const MobileNav: React.FC<MobileNavProps> = ({ onOpenDrawer }) => {
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAFCF5]/95 backdrop-blur-md border-t border-[#DCE6D2] px-2 py-1.5 flex items-center justify-around text-[10px]">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAFCF5]/95 dark:bg-[#0E1B13]/95 backdrop-blur-md border-t border-[#DCE6D2] dark:border-[#274735] px-2 py-1.5 flex items-center justify-around text-[10px] transition-colors">
       <NavLink
         to="/dashboard"
         className={({ isActive }) =>
           `flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg transition-colors ${
-            isActive ? 'text-[#173D2A] font-bold' : 'text-[#687769]'
+            isActive ? 'text-[#173D2A] dark:text-[#ECF5EE] font-bold' : 'text-[#687769] dark:text-[#96B4A0]'
           }`
         }
       >
@@ -31,7 +31,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ onOpenDrawer }) => {
         to="/coding-arena"
         className={({ isActive }) =>
           `flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg transition-colors ${
-            isActive ? 'text-[#173D2A] font-bold' : 'text-[#687769]'
+            isActive ? 'text-[#173D2A] dark:text-[#ECF5EE] font-bold' : 'text-[#687769] dark:text-[#96B4A0]'
           }`
         }
       >
@@ -43,7 +43,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ onOpenDrawer }) => {
         to="/projects"
         className={({ isActive }) =>
           `flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg transition-colors ${
-            isActive ? 'text-[#173D2A] font-bold' : 'text-[#687769]'
+            isActive ? 'text-[#173D2A] dark:text-[#ECF5EE] font-bold' : 'text-[#687769] dark:text-[#96B4A0]'
           }`
         }
       >
@@ -55,7 +55,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ onOpenDrawer }) => {
         to="/credits"
         className={({ isActive }) =>
           `flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg transition-colors ${
-            isActive ? 'text-[#173D2A] font-bold' : 'text-[#687769]'
+            isActive ? 'text-[#173D2A] dark:text-[#ECF5EE] font-bold' : 'text-[#687769] dark:text-[#96B4A0]'
           }`
         }
       >
@@ -65,7 +65,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ onOpenDrawer }) => {
 
       <button
         onClick={onOpenDrawer}
-        className="flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg text-[#687769] hover:text-[#173D2A]"
+        className="flex flex-col items-center gap-1 py-1 px-2.5 rounded-lg text-[#687769] dark:text-[#96B4A0] hover:text-[#173D2A] dark:hover:text-[#ECF5EE]"
       >
         <Menu className="w-4 h-4" />
         <span>Menu</span>

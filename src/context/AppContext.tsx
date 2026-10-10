@@ -42,6 +42,7 @@ import {
 interface AppContextType {
   currentUser: UserProfile;
   switchUser: (user: UserProfile) => void;
+  togglePersona: () => void;
   allUsers: UserProfile[];
   updateUserProfile: (updates: Partial<UserProfile>) => void;
   
@@ -143,6 +144,11 @@ interface AppContextType {
   isFullscreen: boolean;
   toggleFullscreen: () => void;
 
+  // Day & Night Theme
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+
   // Reset demo state
   resetToDemoDefaults: () => void;
 }
@@ -218,7 +224,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(() => {
     const saved = localStorage.getItem('peercraft_community');
-    return saved ? JSON.parse(saved) : initialCommunityPosts;
+    if (!saved) return initialCommunityPosts;
+    try {
+      const parsed: CommunityPost[] = JSON.parse(saved);
+      const existingIds = new Set(parsed.map((p) => p.id));
+      const missing = initialCommunityPosts.filter((p) => !existingIds.has(p.id));
+      return [...parsed, ...missing];
+    } catch {
+      return initialCommunityPosts;
+    }
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -255,6 +269,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+
+  // Synchronize currentUser with localStorage
+  useEffect(() => {
+    localStorage.setItem('peercraft_user', JSON.stringify(currentUser));
+    if (currentUser.role !== 'admin') {
+      localStorage.setItem('peercraft_last_student', JSON.stringify(currentUser));
+    }
+  }, [currentUser]);
+
+  // Day & Night Theme State
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('peercraft_theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('peercraft_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const setTheme = (newTheme: 'light' | 'dark') => {
+    setThemeState(newTheme);
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -441,16 +490,129 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuditLogs((prev) => [newLog, ...prev]);
   };
 
-  // User switching (e.g. Aryan Sharma <-> Admin Ananya Sen)
+  // User switching (e.g. signed-in Student <-> Admin Ananya Sen)
   const switchUser = (user: UserProfile) => {
-    setCurrentUser(user);
+    const rawFullName = user.fullName || 'Student User';
+    const computedFirstName = user.firstName || rawFullName.trim().split(' ')[0] || rawFullName;
+    const formattedUser: UserProfile = {
+      ...user,
+      fullName: rawFullName,
+      firstName: computedFirstName,
+    };
+    setCurrentUser(formattedUser);
+    localStorage.setItem('peercraft_user', JSON.stringify(formattedUser));
+
+    // Save as active student if not an admin persona
+    if (formattedUser.role !== 'admin') {
+      localStorage.setItem('peercraft_last_student', JSON.stringify(formattedUser));
+    }
+
+    // Also record into registered users database
+    try {
+      const savedRegs = localStorage.getItem('peercraft_registered_users');
+      const list: UserProfile[] = savedRegs ? JSON.parse(savedRegs) : [];
+      const filtered = list.filter((u) => u.email.toLowerCase() !== formattedUser.email.toLowerCase());
+      localStorage.setItem('peercraft_registered_users', JSON.stringify([...filtered, formattedUser]));
+    } catch {
+      // ignore
+    }
+
     if (user.role === 'admin') {
       addAuditLog('SESSION_SWITCH', 'AUTH', user.id, `Switched view to administrative persona: ${user.fullName}`);
     }
   };
 
+  const togglePersona = () => {
+    if (currentUser.role === 'admin') {
+      // Restore the authenticated student who actually signed in
+      let targetStudent: UserProfile | null = null;
+      try {
+        const savedStudent = localStorage.getItem('peercraft_last_student');
+        if (savedStudent) {
+          const parsed = JSON.parse(savedStudent);
+          if (parsed && parsed.role !== 'admin') {
+            targetStudent = parsed;
+          }
+        }
+      } catch {}
+
+      if (!targetStudent) {
+        try {
+          const savedRegs = localStorage.getItem('peercraft_registered_users');
+          if (savedRegs) {
+            const list: UserProfile[] = JSON.parse(savedRegs);
+            targetStudent = list.find((u) => u.role !== 'admin') || null;
+          }
+        } catch {}
+      }
+
+      if (!targetStudent) {
+        const rememberedEmail = localStorage.getItem('peercraft_remembered_email');
+        if (rememberedEmail && !rememberedEmail.includes('admin') && !rememberedEmail.includes('ananya')) {
+          const namePart = rememberedEmail.split('@')[0] || 'Student';
+          const formattedName = namePart
+            .replace(/[._-]+/g, ' ')
+            .split(' ')
+            .filter(Boolean)
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(' ') || 'Student User';
+
+          targetStudent = {
+            ...initialUser,
+            id: `usr_${Date.now()}`,
+            fullName: formattedName,
+            firstName: formattedName.split(' ')[0],
+            email: rememberedEmail.trim(),
+            avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(formattedName)}`,
+          };
+        }
+      }
+
+      if (!targetStudent) {
+        targetStudent = initialUser;
+      }
+      switchUser(targetStudent);
+    } else {
+      // Store current student before switching to admin evaluation
+      localStorage.setItem('peercraft_last_student', JSON.stringify(currentUser));
+      switchUser(adminUser);
+    }
+  };
+
   const updateUserProfile = (updates: Partial<UserProfile>) => {
-    setCurrentUser((prev) => ({ ...prev, ...updates }));
+    setCurrentUser((prev) => {
+      const updatedFullName = updates.fullName !== undefined ? updates.fullName : prev.fullName;
+      const updatedFirstName = updates.firstName !== undefined
+        ? updates.firstName
+        : updates.fullName !== undefined
+        ? (updates.fullName.trim().split(' ')[0] || updates.fullName)
+        : prev.firstName;
+
+      const next: UserProfile = {
+        ...prev,
+        ...updates,
+        fullName: updatedFullName,
+        firstName: updatedFirstName,
+      };
+      localStorage.setItem('peercraft_user', JSON.stringify(next));
+
+      if (next.role !== 'admin') {
+        localStorage.setItem('peercraft_last_student', JSON.stringify(next));
+      }
+
+      // Update in registered users database
+      try {
+        const savedRegs = localStorage.getItem('peercraft_registered_users');
+        const list: UserProfile[] = savedRegs ? JSON.parse(savedRegs) : [];
+        const filtered = list.filter((u) => u.email.toLowerCase() !== next.email.toLowerCase());
+        localStorage.setItem('peercraft_registered_users', JSON.stringify([...filtered, next]));
+      } catch {
+        // ignore
+      }
+
+      return next;
+    });
+
     addHistoryItem({
       eventType: 'milestone_completed',
       category: 'Profile Updates',
@@ -1007,6 +1169,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentUser,
         switchUser,
+        togglePersona,
         allUsers: [initialUser, adminUser, ...otherStudents],
         updateUserProfile,
         availableCredits,
@@ -1075,6 +1238,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateAvatar,
         isFullscreen,
         toggleFullscreen,
+        theme,
+        toggleTheme,
+        setTheme,
         resetToDemoDefaults,
       }}
     >

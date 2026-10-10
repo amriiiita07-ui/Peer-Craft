@@ -9,8 +9,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   Save,
+  Sun,
+  Moon,
+  Palette,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { ThemeToggle } from '../components/common/ThemeToggle';
 
 export const SettingsPage: React.FC = () => {
   const { currentUser, resetToDemoDefaults } = useApp();
@@ -60,6 +64,20 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       <form onSubmit={handleSavePreferences} className="space-y-6 text-xs">
+        {/* Appearance & Theme Mode */}
+        <div className="bg-[#FAFCF5] p-5 rounded-card border border-[#DCE6D2] shadow-subtle space-y-4">
+          <h2 className="text-sm font-bold text-[#173D2A] flex items-center justify-between border-b border-[#DCE6D2] pb-2">
+            <div className="flex items-center gap-2">
+              <Palette className="w-4 h-4 text-[#26783C]" />
+              <span>Appearance & Color Theme</span>
+            </div>
+            <ThemeToggle showLabel />
+          </h2>
+          <p className="text-[#687769] leading-relaxed">
+            Switch between crisp Emerald Day Mode and sleek Midnight Obsidian Night Mode with smooth, distraction-free transitions across all campus tools and workspaces.
+          </p>
+        </div>
+
         {/* Account & Profile Privacy */}
         <div className="bg-[#FAFCF5] p-5 rounded-card border border-[#DCE6D2] shadow-subtle space-y-4">
           <h2 className="text-sm font-bold text-[#173D2A] flex items-center gap-2 border-b border-[#DCE6D2] pb-2">

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { UserProfile } from '../types';
+import { ThemeToggle } from '../components/common/ThemeToggle';
 
 export const SignupPage: React.FC = () => {
   const { switchUser, availableCredits, signupBonusAmount } = useApp();
@@ -60,13 +61,16 @@ export const SignupPage: React.FC = () => {
     setTimeout(() => {
       setIsLoading(false);
 
+      const cleanFullName = fullName.trim() || 'Campus Student';
+      const cleanFirstName = cleanFullName.split(' ')[0] || cleanFullName;
+
       // Create new user profile with 1,000 starting credits
       const newUser: UserProfile = {
         id: `usr_${Date.now()}`,
-        fullName,
-        firstName: fullName.split(' ')[0],
-        email,
-        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(fullName)}`,
+        fullName: cleanFullName,
+        firstName: cleanFirstName,
+        email: email.trim(),
+        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanFullName)}`,
         college,
         branch,
         academicYear,
@@ -109,7 +113,11 @@ export const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F7EA] text-[#1D3024] flex items-center justify-center p-4 sm:p-6">
+    <div className="min-h-screen bg-[#F3F7EA] text-[#1D3024] flex items-center justify-center p-4 sm:p-6 relative">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10">
+        <ThemeToggle showLabel />
+      </div>
+
       <div className="max-w-xl w-full bg-[#FAFCF5] rounded-card border border-[#DCE6D2] shadow-card p-6 sm:p-8 space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-1.5">

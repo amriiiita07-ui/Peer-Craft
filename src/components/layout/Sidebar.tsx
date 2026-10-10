@@ -31,12 +31,14 @@ import { adminUser, initialUser } from '../../data/mockData';
 
 interface SidebarProps {
   onCloseMobile?: () => void;
+  isMobileDrawer?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer = false }) => {
   const {
     currentUser,
     switchUser,
+    togglePersona,
     availableCredits,
     unreadNotificationsCount,
     isSidebarCollapsed,
@@ -69,19 +71,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     if (onCloseMobile) onCloseMobile();
   };
 
-  const toggleAdminView = () => {
-    if (currentUser.role === 'admin') {
-      switchUser(initialUser);
-    } else {
-      switchUser(adminUser);
-    }
-  };
-
   return (
     <>
       <aside
-        className={`flex-shrink-0 bg-[#102B20] text-white flex flex-col h-screen sticky top-0 border-r border-[#173D2A]/60 select-none z-30 transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-[72px]' : 'w-[240px]'
+        className={`flex-shrink-0 bg-[#102B20] text-white flex flex-col h-screen border-r border-[#173D2A]/60 select-none z-30 transition-all duration-300 ${
+          isMobileDrawer
+            ? 'relative w-full'
+            : `fixed top-0 left-0 bottom-0 ${isSidebarCollapsed ? 'w-[72px]' : 'w-[240px]'}`
         }`}
       >
         {/* Top Brand Section */}
@@ -296,18 +292,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             {/* Quick Demo Switcher Button */}
             {!isSidebarCollapsed ? (
               <button
-                onClick={toggleAdminView}
-                className="text-[10px] py-1 px-2 rounded bg-[#173D2A] hover:bg-[#26783C] text-[#E4EDCF] font-medium flex items-center justify-center gap-1.5 transition-colors border border-[#26783C]/50 mt-1"
+                onClick={togglePersona}
+                className="text-[10px] py-1 px-2 rounded bg-[#173D2A] hover:bg-[#26783C] text-[#E4EDCF] font-medium flex items-center justify-center gap-1.5 transition-colors border border-[#26783C]/50 mt-1 cursor-pointer"
               >
                 <span>Persona:</span>
                 <span className="font-bold underline text-[#EFC66B]">
-                  {currentUser.role === 'admin' ? 'Admin' : 'Student (Aryan)'}
+                  {currentUser.role === 'admin' ? 'Faculty Admin' : `Student (${currentUser.firstName || 'Student'})`}
                 </span>
               </button>
             ) : (
               <button
-                onClick={toggleAdminView}
-                className="w-full py-1 rounded bg-[#173D2A] hover:bg-[#26783C] text-[#EFC66B] font-bold text-[10px] flex items-center justify-center"
+                onClick={togglePersona}
+                className="w-full py-1 rounded bg-[#173D2A] hover:bg-[#26783C] text-[#EFC66B] font-bold text-[10px] flex items-center justify-center cursor-pointer"
                 title={`Switch persona: currently ${currentUser.role}`}
               >
                 {currentUser.role === 'admin' ? 'ADM' : 'STU'}

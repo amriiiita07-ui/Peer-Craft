@@ -22,6 +22,7 @@ export const AdminDashboardPage: React.FC = () => {
   const {
     currentUser,
     switchUser,
+    togglePersona,
     signupBonusAmount,
     setSignupBonusAmount,
     rewardRules,
@@ -103,19 +104,34 @@ export const AdminDashboardPage: React.FC = () => {
       )}
 
       {/* Role Notice & Persona Quick Switch if not Admin */}
-      {currentUser.role !== 'admin' && (
-        <div className="bg-[#EAF1DC] border border-[#26783C] p-4 rounded-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-[#173D2A]">
+      {currentUser.role !== 'admin' ? (
+        <div className="bg-[#EAF1DC] dark:bg-[#0E2F1F] border border-[#26783C] p-4 rounded-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-[#173D2A] dark:text-[#ECF5EE]">
             <ShieldAlert className="w-5 h-5 text-[#26783C] flex-shrink-0" />
             <span>
               You are currently viewing as <strong>{currentUser.fullName} (Student)</strong>. Switch to the administrative persona to test rule modifications and question directory management.
             </span>
           </div>
           <button
-            onClick={() => switchUser(adminUser)}
-            className="px-4 py-1.5 bg-[#173D2A] hover:bg-[#102B20] text-white rounded-btn font-bold transition-colors whitespace-nowrap shadow-xs"
+            onClick={togglePersona}
+            className="px-4 py-1.5 bg-[#173D2A] hover:bg-[#102B20] text-white rounded-btn font-bold transition-colors whitespace-nowrap shadow-xs cursor-pointer"
           >
             Switch to Admin Persona
+          </button>
+        </div>
+      ) : (
+        <div className="bg-[#FAFCF5] dark:bg-[#162A1E] border border-[#DCE6D2] dark:border-[#274735] p-3.5 rounded-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-[#173D2A] dark:text-[#ECF5EE]">
+            <ShieldAlert className="w-5 h-5 text-[#EFC66B] flex-shrink-0" />
+            <span>
+              You are in <strong>Faculty Admin Mode (Prof. Ananya Sen)</strong>. You can switch back to your signed-in student view at any time.
+            </span>
+          </div>
+          <button
+            onClick={togglePersona}
+            className="px-4 py-1.5 bg-[#26783C] hover:bg-[#1C622F] text-white rounded-btn font-bold transition-colors whitespace-nowrap shadow-xs cursor-pointer"
+          >
+            Switch to Student View
           </button>
         </div>
       )}

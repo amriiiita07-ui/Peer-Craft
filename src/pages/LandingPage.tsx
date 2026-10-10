@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   CheckCircle2,
 } from 'lucide-react';
+import { ThemeToggle } from '../components/common/ThemeToggle';
 
 export const LandingPage: React.FC = () => {
   return (
@@ -30,6 +31,9 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Small Left/Right Day-Night Theme Slider */}
+          <ThemeToggle />
+
           <Link
             to="/login"
             className="px-4 py-2 text-xs font-bold text-[#173D2A] hover:text-[#26783C] transition-colors"
