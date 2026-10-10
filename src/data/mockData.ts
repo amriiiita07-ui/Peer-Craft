@@ -755,7 +755,7 @@ export const initialResources: ResourceItem[] = [
     availability: 'Available',
     borrowingDuration: '14 Days',
     creditCost: 0,
-    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600',
+    imageUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?auto=format&fit=crop&q=80&w=400',
   },
 ];
 

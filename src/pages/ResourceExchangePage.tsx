@@ -168,12 +168,6 @@ export const ResourceExchangePage: React.FC = () => {
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          item.category === 'Books'
-                            ? 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600'
-                            : 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&q=80&w=600';
-                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (

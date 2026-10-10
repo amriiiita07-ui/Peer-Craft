@@ -202,21 +202,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [resources, setResources] = useState<ResourceItem[]>(() => {
     const saved = localStorage.getItem('peercraft_resources');
-    if (saved) {
-      try {
-        const parsed: ResourceItem[] = JSON.parse(saved);
-        return parsed.map((item) => {
-          const initial = initialResources.find((init) => init.id === item.id);
-          if (initial && (!item.imageUrl || item.imageUrl.includes('photo-1532012164546'))) {
-            return { ...item, imageUrl: initial.imageUrl };
-          }
-          return item;
-        });
-      } catch {
-        return initialResources;
-      }
-    }
-    return initialResources;
+    return saved ? JSON.parse(saved) : initialResources;
   });
 
   const [microGigs, setMicroGigs] = useState<MicroGig[]>(() => {
