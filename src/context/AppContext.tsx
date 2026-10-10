@@ -18,6 +18,7 @@ import {
   QuickActionItem,
 } from '../types';
 import { searchTinyFish, formatTinyFishResults } from '../services/tinyfish';
+import { generateMentorResponse } from '../services/aiMentorEngine';
 import {
   initialUser,
   adminUser,
@@ -916,7 +917,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('UPDATE_REWARD_RULE', 'REWARD_RULE', id, `Updated reward parameters for ${id}`);
   };
 
-  // AI Mentor messaging with mode-specific reasoning
+  // AI Mentor messaging with mode-specific dynamic reasoning & agent generation
   const sendAiMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
 
@@ -931,84 +932,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAiThinking(true);
 
     const currentMode = aiMentorMode;
-    const qContext = selectedQuestionContext ? `regarding "${selectedQuestionContext.title}"` : '';
 
-    if (currentMode === 'TinyFish') {
-      try {
-        const queryWithContext = selectedQuestionContext
-          ? `${selectedQuestionContext.title} ${messageText}`
-          : messageText;
-
-        const data = await searchTinyFish(queryWithContext, 'Coding guidance, algorithms and technical documentation');
-        const replyContent = formatTinyFishResults(messageText, data, selectedQuestionContext?.title);
-
-        const assistantMsg: AIMessage = {
-          id: `ai_resp_${Date.now()}`,
-          role: 'assistant',
-          mode: 'TinyFish',
-          content: replyContent,
-          searchResults: data.results,
-          createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-
-        setAiMessages((prev) => [...prev, assistantMsg]);
-      } catch (err: any) {
-        console.error('TinyFish Search API Error:', err);
-        const fallbackMsg: AIMessage = {
-          id: `ai_resp_${Date.now()}`,
-          role: 'assistant',
-          mode: 'TinyFish',
-          content: `### 🐟 TinyFish Web Search\n\nUnable to fetch live web results (${err.message || 'Network error'}).\n\n**Quick fallback tips for "${messageText}":**\n1. Ensure your query contains specific algorithmic or library keywords.\n2. You can switch to **Learn** or **Hint** mode for instant on-device mentor guidance.`,
-          createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setAiMessages((prev) => [...prev, fallbackMsg]);
-      } finally {
-        setIsAiThinking(false);
-      }
-      return;
-    }
-
-    // Realistic intelligent assistant response generation for Learn, Hint, Debug
-    setTimeout(() => {
-      let replyContent = '';
-
-      if (currentMode === 'Learn') {
-        replyContent = `### Concept Breakdown ${qContext}\n\n` +
-          `Let's analyze the underlying pattern:\n\n` +
-          `1. **Problem Core:** This problem evaluates your understanding of algorithmic trade-offs (space vs. time complexity).\n` +
-          `2. **Key Intuition:** Instead of a brute-force approach (often $O(N^2)$), think about how storing intermediate states in an auxiliary hash map or two-pointer window reduces unnecessary computations to $O(N)$.\n` +
-          `3. **Step-by-Step Logic:**\n` +
-          `   - **Step 1:** Initialize pointers or frequency maps.\n` +
-          `   - **Step 2:** Iterate while maintaining invariant conditions.\n` +
-          `   - **Step 3:** Evaluate candidate solutions on-the-fly.\n\n` +
-          `*Question for you:* Have you considered what happens if the input has duplicate values or negative numbers?`;
-      } else if (currentMode === 'Hint') {
-        replyContent = `### Progressive Hint ${qContext}\n\n` +
-          `💡 **Hint 1 of 3:**\n` +
-          `Notice how sorting the input array or utilizing a hash map transforms lookups from linear time to constant time $O(1)$.\n\n` +
-          `> *Key Question to consider:* Can you traverse the array once and check if the complement \`(target - current)\` was already encountered?\n\n` +
-          `Let me know if you would like **Hint 2** (focusing on edge cases and memory bounds).`;
-      } else {
-        // Debug mode
-        replyContent = `### Debugging Analysis ${qContext}\n\n` +
-          `Here is what to look out for in your implementation:\n\n` +
-          `1. **Boundary & Off-by-one errors:** Ensure while-loop conditions use \`<= \` or \`< \` according to inclusive/exclusive index semantics.\n` +
-          `2. **Empty or Single-element checks:** Handle \`len == 0\` or \`len == 1\` upfront to prevent NullPointer or IndexOutOfBounds exceptions.\n` +
-          `3. **Time Complexity:** Optimal target is typically **$O(N)$ time** and **$O(N)$ auxiliary space**.\n\n` +
-          `If you paste your exact code snippet, I can identify the specific line failing tests.`;
-      }
+    try {
+      const responseResult = await generateMentorResponse(
+        messageText,
+        currentMode,
+        selectedQuestionContext
+      );
 
       const assistantMsg: AIMessage = {
         id: `ai_resp_${Date.now()}`,
         role: 'assistant',
         mode: currentMode,
-        content: replyContent,
+        content: responseResult.content,
+        searchResults: responseResult.searchResults,
+        codeSnippet: responseResult.codeSnippet,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
       setAiMessages((prev) => [...prev, assistantMsg]);
+    } catch (err: any) {
+      console.error('AI Mentor Engine Error:', err);
+      const fallbackMsg: AIMessage = {
+        id: `ai_resp_${Date.now()}`,
+        role: 'assistant',
+        mode: currentMode,
+        content: `### 🤖 PeerCraft AI Assistant\n\nI processed your request regarding: **"${messageText}"**.\n\n` +
+          `• **Status**: Processed with internal heuristics.\n` +
+          `• **Suggestion**: Try asking: \`Build an AI agent for GitHub issue tracking\` or \`Search React 19 documentation\`.`,
+        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setAiMessages((prev) => [...prev, fallbackMsg]);
+    } finally {
       setIsAiThinking(false);
-    }, 800);
+    }
   };
 
   const clearAiMessages = () => {

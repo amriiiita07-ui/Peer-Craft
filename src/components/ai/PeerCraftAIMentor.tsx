@@ -39,24 +39,42 @@ export const PeerCraftAIMentor: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const defaultPrompts = [
-    'Explain this problem in simple terms',
-    'Give me a hint without revealing the solution',
-    'Help me find the optimal approach',
-    'Explain time and space complexity',
-    'Help debug my code',
-    'Walk me through an example',
+  const learnPrompts = [
+    '🤖 Build an AI Agent for research',
+    'Explain Two Sum optimal approach',
+    'Explain time & space complexity',
+    'What is Dijkstra algorithm?',
   ];
 
   const tinyFishPrompts = [
-    'Search LeetCode optimal Two Sum solutions',
-    'Search React 19 documentation',
-    'Search Dijkstra algorithm explanation',
-    'Search dynamic programming patterns',
-    'Search Python binary search templates',
+    '🤖 Build a TinyFish Web Scraper Agent',
+    'Search optimal LeetCode Two Sum solutions',
+    'Search React 19 documentation & hooks',
+    'Search TypeScript 5.5 features',
   ];
 
-  const suggestedPrompts = aiMentorMode === 'TinyFish' ? tinyFishPrompts : defaultPrompts;
+  const hintPrompts = [
+    'Give me a hint without spoiling the solution',
+    'What data structure should I use?',
+    'What are the tricky edge cases?',
+    'How do I optimize space complexity?',
+  ];
+
+  const debugPrompts = [
+    '🔍 Check & Audit my AI Agent architecture',
+    'Help debug my code and test edge cases',
+    'How do I fix off-by-one errors?',
+    'Why is my recursion stack overflowing?',
+  ];
+
+  const suggestedPrompts =
+    aiMentorMode === 'TinyFish'
+      ? tinyFishPrompts
+      : aiMentorMode === 'Hint'
+      ? hintPrompts
+      : aiMentorMode === 'Debug'
+      ? debugPrompts
+      : learnPrompts;
 
   useEffect(() => {
     if (isAiMentorOpen) {
